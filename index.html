@@ -73,7 +73,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
+            bottom: 0;
+            background-color: #ff6347;
+            /* RED (Default/Inactive) */
             -webkit-transition: .4s;
             transition: .4s;
             border-radius: 34px;
@@ -93,7 +95,8 @@
         }
 
         input:checked+.slider {
-            background-color: var(--accent-color);
+            background-color: #4cd964;
+            /* GREEN (Active) */
         }
 
         input:focus+.slider {
@@ -281,9 +284,7 @@
 
             // 2.5 Bouton Effacer Historique
             document.getElementById('clear-history-btn').addEventListener('click', () => {
-                if (confirm("Effacer tout l'historique ?")) {
-                    remove(ref(db, 'numerologik/logs'));
-                }
+                remove(ref(db, 'numerologik/logs'));
             });
 
             // 3. Écouter les logs entrants (les 10 derniers)

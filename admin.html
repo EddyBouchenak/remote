@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Numérologik - ADMIN</title>
+    <style>
+        :root {
+            --bg-color: #111;
+            --text-color: #eee;
+            --accent-color: #f0e68c;
+            --danger-color: #ff6347;
+            --success-color: #4cd964;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* TOGGLE SWITCH */
+        .control-panel {
+            background: #222;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent-color);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--accent-color);
+        }
+
+        input:checked+.slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* LOGS LIST */
+        .logs-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .log-header {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 10px;
+            padding-left: 10px;
+        }
+
+        .log-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .log-item {
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-time {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .log-content {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .log-detail {
+            font-size: 14px;
+            color: var(--accent-color);
+            margin-top: 4px;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #bbb;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-connected {
+            background-color: var(--success-color);
+            box-shadow: 0 0 5px var(--success-color);
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: #555;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Télécommande</h1>
+
+    <div class="control-panel">
+        <span class="label">Effet Activé</span>
+        <label class="switch">
+            <input type="checkbox" id="effect-toggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="logs-container">
+        <div class="log-header">Dernières recherches</div>
+        <ul class="log-list" id="log-list">
+            <!-- Logs will appear here -->
+        </ul>
+    </div>
+
+    <div class="status-bar">
+        <span class="status-dot" id="status-indicator"></span>
+        <span id="status-text">Déconnecté</span>
+    </div>
+
+    <!-- FIREBASE SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // --- CONFIGURATION FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2P0UV83Z5cKccaKLLSDslsFD44vqRIP8",
+            authDomain: "numerologik-cc8f9.firebaseapp.com",
+            databaseURL: "https://numerologik-cc8f9-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "numerologik-cc8f9",
+            storageBucket: "numerologik-cc8f9.firebasestorage.app",
+            messagingSenderId: "177427869550",
+            appId: "1:177427869550:web:4d20ede8feb9348189db7f"
+        };
+        // ---------------------------------------------
+
+        // Initialisation
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            document.getElementById('status-indicator').classList.add('status-connected');
+            document.getElementById('status-text').innerText = "Connecté";
+        } catch (e) {
+            console.error("Erreur init Firebase:", e);
+        }
+
+        const toggle = document.getElementById('effect-toggle');
+        const list = document.getElementById('log-list');
+
+        if (db) {
+            // 1. Écouter l'état actuel de l'effet
+            const statusRef = ref(db, 'numerologik/status');
+            onValue(statusRef, (snapshot) => {
+                const val = snapshot.val();
+                if (val && val.active !== undefined) {
+                    toggle.checked = val.active;
+                }
+            });
+
+            // 2. Changer l'état quand on clique sur le switch
+            toggle.addEventListener('change', (e) => {
+                set(statusRef, {
+                    active: e.target.checked,
+                    updatedAt: Date.now()
+                });
+            });
+
+            // 3. Écouter les logs entrants (les 10 derniers)
+            const logsRef = query(ref(db, 'numerologik/logs'), limitToLast(10));
+            onValue(logsRef, (snapshot) => {
+                list.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    // Convertir objet en tableau et trier (récent en haut)
+                    const logsArray = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+
+                    logsArray.forEach(log => {
+                        const li = document.createElement('li');
+                        li.className = 'log-item';
+
+                        const date = new Date(log.timestamp);
+                        const timeStr = date.toLocaleTimeString();
+
+                        li.innerHTML = `
+                            <div class="log-time">${timeStr}</div>
+                            <div class="log-content">${log.date}</div>
+                            <div class="log-detail">${log.details || ''}</div>
+                        `;
+                        list.appendChild(li);
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

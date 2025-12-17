@@ -213,12 +213,15 @@
     <div class="status-bar">
         <span class="status-dot" id="status-indicator"></span>
         <span id="status-text">Déconnecté</span>
+        <button id="clear-history-btn"
+            style="margin-left: 10px; background: #333; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Effacer
+            Historique</button>
     </div>
 
     <!-- FIREBASE SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, push, query, limitToLast, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // --- CONFIGURATION FIREBASE ---
         const firebaseConfig = {
@@ -237,7 +240,7 @@
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
-            
+
             // VERIFICATION REELLE DE LA CONNEXION
             const connectedRef = ref(db, ".info/connected");
             onValue(connectedRef, (snap) => {
@@ -274,6 +277,13 @@
                     active: e.target.checked,
                     updatedAt: Date.now()
                 });
+            });
+
+            // 2.5 Bouton Effacer Historique
+            document.getElementById('clear-history-btn').addEventListener('click', () => {
+                if (confirm("Effacer tout l'historique ?")) {
+                    remove(ref(db, 'numerologik/logs'));
+                }
             });
 
             // 3. Écouter les logs entrants (les 10 derniers)
